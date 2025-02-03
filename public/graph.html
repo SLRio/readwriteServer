@@ -3,45 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Graph</title>
+    <title>Methane Data Graph</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        canvas {
+            max-width: 800px;
+            margin: auto;
+        }
+    </style>
 </head>
 <body>
-    <h1>Graph of Last 30 Days</h1>
-    <canvas id="myChart" width="400" height="200"></canvas>
+    <h1>Methane Data - Last 30 Days</h1>
+    <canvas id="methaneChart"></canvas>
 
     <script>
-        fetch('/data')
+        fetch('/graph-data')
             .then(response => response.json())
             .then(data => {
-                const labels = [];
-                const values = [];
+                const labels = data.map(item => new Date(item.date).toLocaleDateString());
+                const values = data.map(item => item.value);
 
-                // Filter data from the last 30 days
-                const today = new Date();
-                const last30Days = new Date(today.setDate(today.getDate() - 30));
-
-                data.forEach(item => {
-                    const itemDate = new Date(item.payload.Time);
-                    if (itemDate >= last30Days) {
-                        labels.push(itemDate.toLocaleDateString());
-                        values.push(item.payload.GAmount.averageGAmount);
-                    }
-                });
-
-                // Create the chart
-                const ctx = document.getElementById('myChart').getContext('2d');
+                const ctx = document.getElementById('methaneChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Methane Data (Last 30 Days)',
+                            label: 'Methane Levels',
                             data: values,
+                            borderColor: 'blue',
+                            borderWidth: 2,
                             fill: false,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            tension: 0.1
+                            pointRadius: 4,
+                            pointBackgroundColor: 'red'
                         }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: { title: { display: true, text: 'Days' } },
+                            y: { title: { display: true, text: 'Methane Value' } }
+                        }
                     }
                 });
             })
