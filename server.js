@@ -1,102 +1,121 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Write Data</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-        }
-        form {
-            display: inline-block;
-            text-align: left;
-            background: #f4f4f4;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        label {
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background: #218838;
-        }
-        .action-buttons {
-            margin-top: 20px;
-        }
-        .action-buttons button {
-            margin: 10px;
-        }
-    </style>
-</head>
-<body>
-    <h1>Write Data to MongoDB</h1>
-    <form action="/write" method="POST">
-        <label for="date">Date:</label>
-        <input type="date" id="date" name="date" required>
-        <br>
-        <label for="value">Value:</label>
-        <input type="number" id="value" name="value" step="any" required>
-        <br>
-        <button type="submit">Submit</button>
-    </form>
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 
-    <script>
-        // Set the default value of the date field to today's date
-        document.getElementById('date').valueAsDate = new Date();
-    </script>
+const app = express();
+const PORT = 3000;
 
-    <!-- Action buttons for managing the database and showing the graph -->
-    <div class="action-buttons">
-        <button onclick="createDatabase()">Create Database</button>
-        <button onclick="deleteDatabase()">Delete Database</button>
-        <button onclick="showGraphPage()">Show Graph</button>
-    </div>
+// Connect to MongoDB
 
-    <script>
-        // Function to create the 'methane' database
-        function createDatabase() {
-            fetch('/create-db', {
-                method: 'POST',
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(error => console.error('Error creating database:', error));
-        }
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
 
-        // Function to delete the 'methane' database
-        function deleteDatabase() {
-            fetch('/delete-db', {
-                method: 'POST',
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(error => console.error('Error deleting database:', error));
-        }
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', () => {
+    console.log('Connected to MongoDB');
+});
 
-        // Function to navigate to the graph page
-        function showGraphPage() {
-            window.location.href = '/graph.html';
-        }
-    </script>
-</body>
-</html>
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
+// Define a schema and model
+const dataSchema = new mongoose.Schema({
+    date: Date,       // Store the date
+    value: Number,    // Store the value
+});
+
+const Data = mongoose.model('Data', dataSchema); // **FIX: Define Model**
+
+// Routes
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
+app.get('/read', (req, res) => {
+    res.sendFile(__dirname + '/public/read.html');
+});
+
+// Write data to MongoDB
+app.post('/write', async (req, res) => {
+    try {
+        const newData = new Data({
+            date: new Date(req.body.date),  // Convert to Date object
+            value: parseFloat(req.body.value),  // Convert to Number
+        });
+        await newData.save();
+        res.redirect('/read');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error saving data');
+    }
+});
+
+// Read data from MongoDB
+app.get('/data', async (req, res) => {
+    try {
+        const data = await Data.find();
+        res.json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching data');
+    }
+});
+
+
+
+// Fetch last 30 days of data
+app.get('/graph-data', async (req, res) => {
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const data = await Data.find({ date: { $gte: thirtyDaysAgo } }).sort({ date: 1 });
+        res.json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching graph data');
+    }
+});
+
+// Create Database (methane)
+app.post('/create-db', async (req, res) => {
+    try {
+        // Creating a 'methane' database by making sure the schema exists
+        const dbName = 'methane';
+        mongoose.connection.db.createCollection('data', (err, res) => {
+            if (err) {
+                return res.status(500).send({ message: 'Error creating database' });
+            }
+            res.send({ message: 'Database "methane" created successfully!' });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Error creating database' });
+    }
+});
+
+// Delete Database (methane)
+app.post('/delete-db', async (req, res) => {
+    try {
+        // Drop the 'methane' database
+        mongoose.connection.db.dropDatabase((err, result) => {
+            if (err) {
+                return res.status(500).send({ message: 'Error deleting database' });
+            }
+            res.send({ message: 'Database "methane" deleted successfully!' });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Error deleting database' });
+    }
+});
+
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
