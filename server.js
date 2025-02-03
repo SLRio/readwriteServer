@@ -65,6 +65,24 @@ app.get('/data', async (req, res) => {
     }
 });
 
+
+
+// Fetch last 30 days of data
+app.get('/graph-data', async (req, res) => {
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const data = await Data.find({ date: { $gte: thirtyDaysAgo } }).sort({ date: 1 });
+        res.json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching graph data');
+    }
+});
+
+
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
