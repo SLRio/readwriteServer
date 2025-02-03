@@ -40,6 +40,12 @@
         button:hover {
             background: #218838;
         }
+        .action-buttons {
+            margin-top: 20px;
+        }
+        .action-buttons button {
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
@@ -57,6 +63,40 @@
     <script>
         // Set the default value of the date field to today's date
         document.getElementById('date').valueAsDate = new Date();
+    </script>
+
+    <!-- Action buttons for managing the database and showing the graph -->
+    <div class="action-buttons">
+        <button type="button" onclick="createDatabase()">Create Database</button>
+        <button type="button" onclick="deleteDatabase()">Delete Database</button>
+        <button type="button" onclick="showGraphPage()">Show Graph</button>
+    </div>
+
+    <script>
+        // Function to create the 'methane' database
+        function createDatabase() {
+            fetch('/create-db', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error('Error creating database:', error));
+        }
+
+        // Function to delete the 'methane' database
+        function deleteDatabase() {
+            fetch('/delete-db', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error('Error deleting database:', error));
+        }
+
+        // Function to navigate to the graph page
+        function showGraphPage() {
+            window.location.href = '/graph.html'; // Ensure this page exists
+        }
     </script>
 </body>
 </html>
