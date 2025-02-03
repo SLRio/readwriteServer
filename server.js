@@ -24,9 +24,17 @@ app.use(express.static('public'));
 
 // Define a schema and model
 const dataSchema = new mongoose.Schema({
-    date: Date,       // Store the date
-    value: Number,    // Store the value
+    operation: String,
+    query: Object,
+    payload: {
+        GAmount: {
+            averageGAmount: Number
+        },
+        Time: String
+    },
+    _msgid: String
 });
+
 
 const Data = mongoose.model('Data', dataSchema); // **FIX: Define Model**
 
@@ -43,8 +51,15 @@ app.get('/read', (req, res) => {
 app.post('/write', async (req, res) => {
     try {
         const newData = new Data({
-            date: new Date(req.body.date),  // Convert to Date object
-            value: parseFloat(req.body.value),  // Convert to Number
+            operation: 'update',  // Assuming you always want to mark it as an "update" operation
+            query: {},            // Use an empty query, you can modify this if needed
+            payload: {
+                GAmount: {
+                    averageGAmount: parseInt(req.body.value), // Store the value as an integer
+                },
+                Time: new Date().toLocaleString() // Current timestamp as "Time"
+            },
+            _msgid: 'uniqueMsgID'  // You can generate a unique ID or use any other logic
         });
         await newData.save();
         res.redirect('/read');
@@ -53,6 +68,8 @@ app.post('/write', async (req, res) => {
         res.status(500).send('Error saving data');
     }
 });
+
+
 
 // Read data from MongoDB
 app.get('/data', async (req, res) => {
@@ -68,18 +85,19 @@ app.get('/data', async (req, res) => {
 
 
 // Fetch last 30 days of data
-app.get('/graph-data', async (req, res) => {
-    try {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+<script>
+    fetch('/data')
+        .then(response => response.json())
+        .then(data => {
+            const dataList = document.getElementById('data-list');
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `GAmount: ${item.payload.GAmount.averageGAmount}, Time: ${item.payload.Time}`;
+                dataList.appendChild(li);
+            });
+        });
+</script>
 
-        const data = await Data.find({ date: { $gte: thirtyDaysAgo } }).sort({ date: 1 });
-        res.json(data);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error fetching graph data');
-    }
-});
 
 // Create Database (methane)
 app.post('/create-db', async (req, res) => {
