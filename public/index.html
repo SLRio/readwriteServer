@@ -67,9 +67,9 @@
 
     <!-- Action buttons for managing the database and showing the graph -->
     <div class="action-buttons">
-        <button onclick="createDatabase()">Create Database</button>
-        <button onclick="deleteDatabase()">Delete Database</button>
-        <button onclick="showGraphPage()">Show Graph</button>
+        <button type="button" onclick="createDatabase()">Create Database</button>
+        <button type="button" onclick="deleteDatabase()">Delete Database</button>
+        <button type="button" onclick="showGraphPage()">Show Graph</button>
     </div>
 
     <script>
@@ -95,7 +95,7 @@
 
         // Function to navigate to the graph page
         function showGraphPage() {
-            window.location.href = '/graph.html';
+            window.location.href = '/graph.html'; // Ensure this page exists
         }
     </script>
 </body>
